@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flight-app-ingress
+  namespace: flight-app
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: flight-app.local   # Replace with your actual domain or cluster IP
+      http:
+        paths:
+          # Backend services — requests are forwarded as-is (no path rewriting).
+          # /users/* → user-service   (service handles /users/register, /users/login, /users/:id)
+          # /flights/* → flight-service
+          # /bookings/* → booking-service
+          - path: /users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 3001
+          - path: /flights
+            pathType: Prefix
+            backend:
+              service:
+                name: flight-service
+                port:
+                  number: 3002
+          - path: /bookings
+            pathType: Prefix
+            backend:
+              service:
+                name: booking-service
+                port:
+                  number: 3003
+          # Frontend — catch-all (must come last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: flight-app
+data:
+  # These are baked in at Docker build time via ARG/ENV.
+  # To change service URLs: rebuild the image with new --build-arg values.
+  # Documented here for reference:
+  # NEXT_PUBLIC_USER_SERVICE_URL: "http://<ingress-host>/users"  (via ingress path routing)
+  # NEXT_PUBLIC_FLIGHT_SERVICE_URL: "http://<ingress-host>/flights"
+  # NEXT_PUBLIC_BOOKING_SERVICE_URL: "http://<ingress-host>/bookings"
+  PORT: "3000"
