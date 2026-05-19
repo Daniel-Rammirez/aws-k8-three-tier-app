@@ -1,0 +1,152 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ── Build & push frontend ───────────────────────────────────────────────────
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm ci && npm test
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flight-frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_USER_SERVICE_URL=${{ vars.USER_SERVICE_URL }}
+            NEXT_PUBLIC_FLIGHT_SERVICE_URL=${{ vars.FLIGHT_SERVICE_URL }}
+            NEXT_PUBLIC_BOOKING_SERVICE_URL=${{ vars.BOOKING_SERVICE_URL }}
+
+  # ── Build & push user-service ───────────────────────────────────────────────
+  build-user-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        working-directory: ./user-service
+        run: npm ci && npm test
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push user-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./user-service
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flight-user-service:${{ github.sha }}
+
+  # ── Build & push flight-service ─────────────────────────────────────────────
+  build-flight-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        working-directory: ./flight-service
+        run: npm ci && npm test
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push flight-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./flight-service
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flight-flight-service:${{ github.sha }}
+
+  # ── Build & push booking-service ────────────────────────────────────────────
+  build-booking-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        working-directory: ./booking-service
+        run: npm ci && npm test
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push booking-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./booking-service
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/flight-booking-service:${{ github.sha }}
+
+  # ── Deploy to Kubernetes ─────────────────────────────────────────────────────
+  deploy:
+    needs:
+      - build-frontend
+      - build-user-service
+      - build-flight-service
+      - build-booking-service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Update image tags in K8s manifests
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          DOCKER_USER=${{ secrets.DOCKERHUB_USERNAME }}
+          sed -i "s|YOUR_DOCKERHUB_USERNAME/flight-frontend:latest|${DOCKER_USER}/flight-frontend:${IMAGE_TAG}|g" k8s/frontend/deployment.yaml
+          sed -i "s|YOUR_DOCKERHUB_USERNAME/flight-user-service:latest|${DOCKER_USER}/flight-user-service:${IMAGE_TAG}|g" k8s/user-service/deployment.yaml
+          sed -i "s|YOUR_DOCKERHUB_USERNAME/flight-flight-service:latest|${DOCKER_USER}/flight-flight-service:${IMAGE_TAG}|g" k8s/flight-service/deployment.yaml
+          sed -i "s|YOUR_DOCKERHUB_USERNAME/flight-booking-service:latest|${DOCKER_USER}/flight-booking-service:${IMAGE_TAG}|g" k8s/booking-service/deployment.yaml
+
+      - name: Create namespace
+        run: kubectl create namespace flight-app --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/user-service/postgres/
+          kubectl apply -f k8s/flight-service/postgres/
+          kubectl apply -f k8s/booking-service/postgres/
+          kubectl apply -f k8s/user-service/
+          kubectl apply -f k8s/flight-service/
+          kubectl apply -f k8s/booking-service/
+          kubectl apply -f k8s/frontend/
+          kubectl apply -f k8s/ingress.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/user-service -n flight-app --timeout=120s
+          kubectl rollout status deployment/flight-service -n flight-app --timeout=120s
+          kubectl rollout status deployment/booking-service -n flight-app --timeout=120s
+          kubectl rollout status deployment/frontend -n flight-app --timeout=120s
