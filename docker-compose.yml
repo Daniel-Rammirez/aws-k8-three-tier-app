@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # ── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:3001
+        NEXT_PUBLIC_FLIGHT_SERVICE_URL: http://localhost:3002
+        NEXT_PUBLIC_BOOKING_SERVICE_URL: http://localhost:3003
+    ports:
+      - '3000:3000'
+    depends_on:
+      - user-service
+      - flight-service
+      - booking-service
+    networks:
+      - flight-network
+
+  # ── User Service ─────────────────────────────────────────────────────────────
+  user-service:
+    build:
+      context: ./user-service
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_URL: postgres://postgres:password@user-db:5432/userdb
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      PORT: '3001'
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - flight-network
+
+  user-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+      - ./user-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flight-network
+
+  # ── Flight Service ───────────────────────────────────────────────────────────
+  flight-service:
+    build:
+      context: ./flight-service
+    ports:
+      - '3002:3002'
+    environment:
+      DATABASE_URL: postgres://postgres:password@flight-db:5432/flightdb
+      PORT: '3002'
+    depends_on:
+      flight-db:
+        condition: service_healthy
+    networks:
+      - flight-network
+
+  flight-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: flightdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - flight-db-data:/var/lib/postgresql/data
+      - ./flight-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flight-network
+
+  # ── Booking Service ──────────────────────────────────────────────────────────
+  booking-service:
+    build:
+      context: ./booking-service
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_URL: postgres://postgres:password@booking-db:5432/bookingdb
+      FLIGHT_SERVICE_URL: http://flight-service:3002
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      PORT: '3003'
+    depends_on:
+      booking-db:
+        condition: service_healthy
+      flight-service:
+        condition: service_started
+    networks:
+      - flight-network
+
+  booking-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: bookingdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - booking-db-data:/var/lib/postgresql/data
+      - ./booking-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flight-network
+
+volumes:
+  user-db-data:
+  flight-db-data:
+  booking-db-data:
+
+networks:
+  flight-network:
+    driver: bridge
