@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS flights (
+  id SERIAL PRIMARY KEY,
+  origin VARCHAR(255) NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  date DATE NOT NULL,
+  price DECIMAL(10, 2) NOT NULL,
+  total_seats INTEGER NOT NULL,
+  available_seats INTEGER NOT NULL
+);
