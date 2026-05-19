@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS bookings (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  flight_id INTEGER NOT NULL,
+  booked_at TIMESTAMPTZ DEFAULT NOW(),
+  status VARCHAR(50) NOT NULL DEFAULT 'confirmed'
+);
