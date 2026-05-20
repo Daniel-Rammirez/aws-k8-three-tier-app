@@ -12,12 +12,12 @@ Browser
         └── booking-service (Express :3003) ── booking-db (Postgres)
 ```
 
-| Service | Responsibility |
-|---------|---------------|
-| `user-service` | Register, login, JWT issuance |
-| `flight-service` | Flight catalog, seat decrement |
-| `booking-service` | Create bookings, calls flight-service |
-| `frontend` | Next.js UI, stores JWT in localStorage |
+| Service           | Responsibility                         |
+| ----------------- | -------------------------------------- |
+| `user-service`    | Register, login, JWT issuance          |
+| `flight-service`  | Flight catalog, seat decrement         |
+| `booking-service` | Create bookings, calls flight-service  |
+| `frontend`        | Next.js UI, stores JWT in localStorage |
 
 ## Running locally with Docker Compose
 
@@ -34,11 +34,11 @@ docker compose up --build
 
 The first run builds all images. Subsequent runs are faster.
 
-| URL | Service |
-|-----|---------|
-| http://localhost:3000 | Frontend |
-| http://localhost:3001/health | user-service |
-| http://localhost:3002/health | flight-service |
+| URL                          | Service         |
+| ---------------------------- | --------------- |
+| http://localhost:3000        | Frontend        |
+| http://localhost:3001/health | user-service    |
+| http://localhost:3002/health | flight-service  |
 | http://localhost:3003/health | booking-service |
 
 ### Stop and clean up
@@ -132,21 +132,22 @@ The pipeline in `.github/workflows/pipeline.yml` triggers on push to `main`.
 
 ### Required GitHub secrets
 
-| Secret | Value |
-|--------|-------|
-| `DOCKERHUB_USERNAME` | Your Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `KUBECONFIG` | Base64-encoded kubeconfig: `cat ~/.kube/config \| base64` |
+| Secret               | Value                                                     |
+| -------------------- | --------------------------------------------------------- |
+| `DOCKERHUB_USERNAME` | Your Docker Hub username                                  |
+| `DOCKERHUB_TOKEN`    | Docker Hub access token                                   |
+| `KUBECONFIG`         | Base64-encoded kubeconfig: `cat ~/.kube/config \| base64` |
 
 ### Required GitHub variables (Actions → Variables)
 
-| Variable | Example |
-|----------|---------|
-| `USER_SERVICE_URL` | `http://flight-app.example.com` |
-| `FLIGHT_SERVICE_URL` | `http://flight-app.example.com` |
+| Variable              | Example                         |
+| --------------------- | ------------------------------- |
+| `USER_SERVICE_URL`    | `http://flight-app.example.com` |
+| `FLIGHT_SERVICE_URL`  | `http://flight-app.example.com` |
 | `BOOKING_SERVICE_URL` | `http://flight-app.example.com` |
 
 The pipeline:
+
 1. Runs `npm test` for each service (currently a no-op placeholder)
 2. Builds and pushes Docker images tagged with the commit SHA
 3. Applies K8s manifests with the new image tags
@@ -156,33 +157,33 @@ The pipeline:
 
 ### user-service (port 3001)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/users/register` | No | `{name, email, password}` → `{token, user}` |
-| POST | `/users/login` | No | `{email, password}` → `{token, user}` |
-| GET | `/users/:id` | Bearer | Returns user profile |
-| GET | `/health` | No | `{status: "ok"}` |
+| Method | Path              | Auth   | Description                                 |
+| ------ | ----------------- | ------ | ------------------------------------------- |
+| POST   | `/users/register` | No     | `{name, email, password}` → `{token, user}` |
+| POST   | `/users/login`    | No     | `{email, password}` → `{token, user}`       |
+| GET    | `/users/:id`      | Bearer | Returns user profile                        |
+| GET    | `/health`         | No     | `{status: "ok"}`                            |
 
 ### flight-service (port 3002)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/flights` | No | All flights |
-| GET | `/flights/:id` | No | Single flight |
-| PUT | `/flights/:id/seats` | No | Decrement available seats by 1 |
-| GET | `/health` | No | `{status: "ok"}` |
+| Method | Path                 | Auth | Description                    |
+| ------ | -------------------- | ---- | ------------------------------ |
+| GET    | `/flights`           | No   | All flights                    |
+| GET    | `/flights/:id`       | No   | Single flight                  |
+| PUT    | `/flights/:id/seats` | No   | Decrement available seats by 1 |
+| GET    | `/health`            | No   | `{status: "ok"}`               |
 
 ### booking-service (port 3003)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/bookings` | Bearer | `{flightId}` → booking record |
-| GET | `/bookings/user/:userId` | Bearer | All bookings for a user (with flight details) |
-| GET | `/health` | No | `{status: "ok"}` |
+| Method | Path                     | Auth   | Description                                   |
+| ------ | ------------------------ | ------ | --------------------------------------------- |
+| POST   | `/bookings`              | Bearer | `{flightId}` → booking record                 |
+| GET    | `/bookings/user/:userId` | Bearer | All bookings for a user (with flight details) |
+| GET    | `/health`                | No     | `{status: "ok"}`                              |
 
 ## Notes
 
 - **No race condition handling** — seat decrement is a plain UPDATE with no locking. This is intentional; the focus is on infra, not business logic.
 - **JWT** — user-service and booking-service share the same `JWT_SECRET`. Tokens expire in 24 hours.
 - **Database init** — each Postgres container runs `init.sql` on first start to create the table. The flight-service seeds 12 sample flights on startup if the table is empty.
-- **NEXT_PUBLIC_ env vars** — baked into the Next.js bundle at Docker build time. To change service URLs in K8s, rebuild the frontend image with new `--build-arg` values.
+- **NEXT*PUBLIC* env vars** — baked into the Next.js bundle at Docker build time. To change service URLs in K8s, rebuild the frontend image with new `--build-arg` values.
