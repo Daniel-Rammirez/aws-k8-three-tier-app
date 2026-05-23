@@ -1,7 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { flightApi, bookingApi, clearSession, getCurrentUser, Flight, User } from '../lib/api';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import {
+  flightApi,
+  bookingApi,
+  clearSession,
+  getCurrentUser,
+  Flight,
+  User,
+} from "../lib/api";
 
 export default function Flights() {
   const router = useRouter();
@@ -9,19 +16,21 @@ export default function Flights() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [filtered, setFiltered] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [bookingId, setBookingId] = useState<number | null>(null);
   const [bookingError, setBookingError] = useState<Record<number, string>>({});
-  const [bookingSuccess, setBookingSuccess] = useState<Record<number, boolean>>({});
+  const [bookingSuccess, setBookingSuccess] = useState<Record<number, boolean>>(
+    {},
+  );
 
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [date, setDate] = useState('');
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [date, setDate] = useState("");
 
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
     setUser(currentUser);
@@ -32,7 +41,7 @@ export default function Flights() {
         setFlights(data);
         setFiltered(data);
       })
-      .catch(() => setError('Failed to load flights'))
+      .catch(() => setError("Failed to load flights"))
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -40,12 +49,12 @@ export default function Flights() {
     let result = flights;
     if (origin.trim()) {
       result = result.filter((f) =>
-        f.origin.toLowerCase().includes(origin.toLowerCase())
+        f.origin.toLowerCase().includes(origin.toLowerCase()),
       );
     }
     if (destination.trim()) {
       result = result.filter((f) =>
-        f.destination.toLowerCase().includes(destination.toLowerCase())
+        f.destination.toLowerCase().includes(destination.toLowerCase()),
       );
     }
     if (date) {
@@ -57,20 +66,22 @@ export default function Flights() {
   const handleBook = async (flightId: number) => {
     if (!user) return;
     setBookingId(flightId);
-    setBookingError((prev) => ({ ...prev, [flightId]: '' }));
+    setBookingError((prev) => ({ ...prev, [flightId]: "" }));
 
     try {
       await bookingApi.create(flightId);
       setBookingSuccess((prev) => ({ ...prev, [flightId]: true }));
       setFlights((prev) =>
         prev.map((f) =>
-          f.id === flightId ? { ...f, available_seats: f.available_seats - 1 } : f
-        )
+          f.id === flightId
+            ? { ...f, available_seats: f.available_seats - 1 }
+            : f,
+        ),
       );
     } catch (err: unknown) {
       setBookingError((prev) => ({
         ...prev,
-        [flightId]: err instanceof Error ? err.message : 'Booking failed',
+        [flightId]: err instanceof Error ? err.message : "Booking failed",
       }));
     } finally {
       setBookingId(null);
@@ -79,7 +90,7 @@ export default function Flights() {
 
   const handleLogout = () => {
     clearSession();
-    router.push('/login');
+    router.push("/login");
   };
 
   return (
@@ -90,17 +101,25 @@ export default function Flights() {
           <span className="text-sm text-gray-600">
             Hi, <span className="font-medium">{user?.name}</span>
           </span>
-          <Link href="/bookings" className="text-sm text-blue-600 hover:underline">
+          <Link
+            href="/bookings"
+            className="text-sm text-blue-600 hover:underline"
+          >
             My Bookings
           </Link>
-          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-700">
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
             Logout
           </button>
         </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Search Flights</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Search Flights
+        </h2>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
@@ -160,7 +179,9 @@ export default function Flights() {
                 </div>
                 <div className="text-gray-400 text-lg">→</div>
                 <div className="text-center">
-                  <p className="font-semibold text-gray-800">{flight.destination}</p>
+                  <p className="font-semibold text-gray-800">
+                    {flight.destination}
+                  </p>
                   <p className="text-xs text-gray-500">Destination</p>
                 </div>
               </div>
@@ -168,11 +189,11 @@ export default function Flights() {
               <div className="flex items-center gap-6 text-sm text-gray-600">
                 <div>
                   <span className="text-gray-400 text-xs">Date </span>
-                  {new Date(flight.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    timeZone: 'UTC',
+                  {new Date(flight.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
                   })}
                 </div>
                 <div>
@@ -180,25 +201,37 @@ export default function Flights() {
                     ${Number(flight.price).toFixed(2)}
                   </span>
                 </div>
-                <div className={flight.available_seats === 0 ? 'text-red-500' : 'text-green-600'}>
+                <div
+                  className={
+                    flight.available_seats === 0
+                      ? "text-red-500"
+                      : "text-green-600"
+                  }
+                >
                   {flight.available_seats} seats left
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-1">
                 {bookingSuccess[flight.id] ? (
-                  <span className="text-green-600 text-sm font-medium">Booked!</span>
+                  <span className="text-green-600 text-sm font-medium">
+                    Booked!
+                  </span>
                 ) : (
                   <button
                     onClick={() => handleBook(flight.id)}
-                    disabled={flight.available_seats === 0 || bookingId === flight.id}
+                    disabled={
+                      flight.available_seats === 0 || bookingId === flight.id
+                    }
                     className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
                   >
-                    {bookingId === flight.id ? 'Booking...' : 'Book'}
+                    {bookingId === flight.id ? "Booking..." : "Book"}
                   </button>
                 )}
                 {bookingError[flight.id] && (
-                  <p className="text-red-500 text-xs">{bookingError[flight.id]}</p>
+                  <p className="text-red-500 text-xs">
+                    {bookingError[flight.id]}
+                  </p>
                 )}
               </div>
             </div>
