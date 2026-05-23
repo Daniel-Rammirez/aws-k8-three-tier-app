@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { getCurrentUser } from '../lib/api';
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import { getCurrentUser } from "../lib/api";
 
 export default function Home() {
   const router = useRouter();
@@ -8,9 +8,9 @@ export default function Home() {
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
-      router.replace('/flights');
+      router.replace("/flights");
     } else {
-      router.replace('/login');
+      router.replace("/login");
     }
   }, [router]);
 
