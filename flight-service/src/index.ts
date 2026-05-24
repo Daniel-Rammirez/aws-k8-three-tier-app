@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import { connectWithRetry } from './db';
-import { seedFlights } from './seed';
 import flightsRouter from './routes/flights';
 
 const app = express();
@@ -18,7 +17,6 @@ app.use('/flights', flightsRouter);
 
 async function start() {
   await connectWithRetry();
-  await seedFlights();
   app.listen(PORT, () => {
     console.log(`Flight service running on port ${PORT}`);
   });

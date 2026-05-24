@@ -5,5 +5,21 @@ CREATE TABLE IF NOT EXISTS flights (
   date DATE NOT NULL,
   price DECIMAL(10, 2) NOT NULL,
   total_seats INTEGER NOT NULL,
-  available_seats INTEGER NOT NULL
+  available_seats INTEGER NOT NULL,
+  UNIQUE (origin, destination, date)
 );
+
+INSERT INTO flights (origin, destination, date, price, total_seats, available_seats) VALUES
+  ('New York',     'Los Angeles', '2025-08-01', 299.99, 150, 150),
+  ('Los Angeles',  'Chicago',     '2025-08-02', 199.99, 120, 120),
+  ('Chicago',      'Miami',       '2025-08-03', 249.99, 100, 100),
+  ('Miami',        'Seattle',     '2025-08-04', 349.99,  80,  80),
+  ('Seattle',      'Boston',      '2025-08-05', 279.99,  90,  90),
+  ('Boston',       'Denver',      '2025-08-06', 189.99, 110, 110),
+  ('Denver',       'Phoenix',     '2025-08-07', 149.99, 130, 130),
+  ('Phoenix',      'Atlanta',     '2025-08-08', 229.99, 140, 140),
+  ('Atlanta',      'New York',    '2025-08-09', 219.99, 160, 160),
+  ('San Francisco','Dallas',      '2025-08-10', 259.99, 120, 120),
+  ('Dallas',       'Las Vegas',   '2025-08-11', 179.99, 100, 100),
+  ('Las Vegas',    'Portland',    '2025-08-12', 199.99,  90,  90)
+ON CONFLICT DO NOTHING;
