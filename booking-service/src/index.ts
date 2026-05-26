@@ -1,7 +1,7 @@
-import express from 'express';
-import cors from 'cors';
-import { connectWithRetry } from './db';
-import bookingsRouter from './routes/bookings';
+import express from "express";
+import cors from "cors";
+import { connectWithRetry } from "./db";
+import bookingsRouter from "./routes/bookings";
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -9,11 +9,11 @@ const PORT = process.env.PORT || 3003;
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
-app.use('/bookings', bookingsRouter);
+app.use("/bookings", bookingsRouter);
 
 async function start() {
   await connectWithRetry();
